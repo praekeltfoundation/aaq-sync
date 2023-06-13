@@ -1,16 +1,23 @@
+import os
 from datetime import datetime
 
 import pytest
+from pytest_postgresql import factories
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool
 
 from aaq_sync.data_models import Base, FAQModel
 
+if "USE_EXISTING_PG" in os.environ:
+    pg_fixture = factories.postgresql("postgresql_noproc")
+else:
+    pg_fixture = factories.postgresql("postgresql_proc")
+
 
 @pytest.fixture()
-def dbsession(postgresql):
-    i = postgresql.info
+def dbsession(pg_fixture):
+    i = pg_fixture.info
     url = f"postgresql+psycopg://{i.user}:@{i.host}:{i.port}/{i.dbname}"
     engine = create_engine(url, echo=False, poolclass=NullPool)
     Base.metadata.create_all(engine)
