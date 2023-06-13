@@ -1,26 +1,33 @@
-from sqlalchemy import ARRAY, Column, DateTime, Float, Integer, String
-from sqlalchemy.orm import declarative_base
+from datetime import datetime
 
-Base = declarative_base()
+from sqlalchemy import ARRAY, Float, Integer, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+class Base(DeclarativeBase):
+    type_annotation_map = {
+        list[str]: ARRAY(String),
+        list[float]: ARRAY(Float),
+    }
 
 
 class FAQModel(Base):
     """
     SQLAlchemy data model for FAQ
 
-    (Copied from aaq_admin_template and translated to plain SQLAlchemy.)
+    (Copied from aaq_admin_template and translated to modern SQLAlchemy.)
     """
 
     __tablename__ = "faqmatches"
 
-    faq_id = Column(Integer, primary_key=True)
-    faq_added_utc = Column(DateTime())
-    faq_updated_utc = Column(DateTime())
-    faq_author = Column(String())
-    faq_title = Column(String())
-    faq_content_to_send = Column(String())
-    faq_tags = Column(ARRAY(String()))
-    faq_questions = Column(ARRAY(String()), nullable=False)
-    faq_contexts = Column(ARRAY(String()))
-    faq_thresholds = Column(ARRAY(Float()))
-    faq_weight = Column(Integer())
+    faq_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    faq_added_utc: Mapped[datetime]
+    faq_updated_utc: Mapped[datetime | None]
+    faq_author: Mapped[str]
+    faq_title: Mapped[str]
+    faq_content_to_send: Mapped[str]
+    faq_tags: Mapped[list[str] | None]
+    faq_questions: Mapped[list[str]]
+    faq_contexts: Mapped[list[str] | None]
+    faq_thresholds: Mapped[list[float] | None]
+    faq_weight: Mapped[int]

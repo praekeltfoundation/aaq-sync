@@ -28,7 +28,6 @@ pytest = "^7.3.1"
 pytest-cov = "^4.0.0"
 pytest-postgresql = "^5.0.0"
 ruff = "^0.0.261"
-sqlalchemy = {extras = ["mypy"], version = "^2.0.16"}
 
 [tool.poetry.group.lsp]
 optional = true
@@ -38,7 +37,6 @@ python-lsp-server = "^1.7.2"
 python-lsp-ruff = "^1.4.0"
 python-lsp-black = "^1.2.1"
 pylsp-mypy = "^0.6.6"
-sqlalchemy = "^2.0.16"
 
 [tool.black]
 preview = true
@@ -46,7 +44,6 @@ preview = true
 [tool.mypy]
 ignore_missing_imports = false
 check_untyped_defs = true
-plugins = "sqlalchemy.ext.mypy.plugin"
 
 [tool.pytest.ini_options]
 addopts = "--cov=src --cov-report=term-missing"

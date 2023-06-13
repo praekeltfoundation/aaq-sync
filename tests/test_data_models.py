@@ -1,28 +1,16 @@
-import os
 from datetime import datetime
 
 import pytest
-from pytest_postgresql import factories
-from sqlalchemy import create_engine, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.pool import NullPool
 
 from aaq_sync.data_models import Base, FAQModel
 
-if "USE_EXISTING_PG" in os.environ:
-    pg_fixture = factories.postgresql("postgresql_noproc")
-else:
-    pg_fixture = factories.postgresql("postgresql_proc")
-
 
 @pytest.fixture()
-def dbsession(pg_fixture):
-    i = pg_fixture.info
-    creds = f"{i.user}:{i.password}"
-    url = f"postgresql+psycopg://{creds}@{i.host}:{i.port}/{i.dbname}"
-    engine = create_engine(url, echo=False, poolclass=NullPool)
-    Base.metadata.create_all(engine)
-    with Session(engine) as session:
+def dbsession(dbengine):
+    Base.metadata.create_all(dbengine)
+    with Session(dbengine) as session:
         yield session
 
 
@@ -33,25 +21,34 @@ def fetch_faqs(dbsession: Session) -> list[FAQModel]:
 
 def test_faq(dbsession):
     """
-    We can create an FAQ entry and load it from the db.
+    We can create FAQ entries and load them from the db.
     """
     assert fetch_faqs(dbsession) == []
     now = datetime.utcnow()
 
-    faq = FAQModel(
+    faq1 = FAQModel(
         faq_added_utc=now,
         faq_updated_utc=now,
         faq_author="Author",
         faq_title="How to Ask a Question",
-        faq_content_to_send="Politely",
+        faq_content_to_send="Politely.",
         faq_weight=42,
         faq_tags=["ask", "question"],
         faq_questions=["How do I ask a question?", "Huh?"],
-        faq_contexts=[],
-        faq_thresholds=[],
+        faq_thresholds=[0.4],
     )
 
-    dbsession.add(faq)
+    faq2 = FAQModel(
+        faq_added_utc=now,
+        faq_author="Author",
+        faq_title="How to Answer a Question",
+        faq_content_to_send="Accurately.",
+        faq_weight=42,
+        faq_questions=["How do I answer a question?"],
+    )
+
+    dbsession.add(faq1)
+    dbsession.add(faq2)
     dbsession.commit()
 
-    assert fetch_faqs(dbsession) == [faq]
+    assert fetch_faqs(dbsession) == [faq1, faq2]
