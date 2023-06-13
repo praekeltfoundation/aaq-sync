@@ -18,7 +18,8 @@ else:
 @pytest.fixture()
 def dbsession(pg_fixture):
     i = pg_fixture.info
-    url = f"postgresql+psycopg://{i.user}:@{i.host}:{i.port}/{i.dbname}"
+    creds = f"{i.user}:{i.password}"
+    url = f"postgresql+psycopg://{creds}@{i.host}:{i.port}/{i.dbname}"
     engine = create_engine(url, echo=False, poolclass=NullPool)
     Base.metadata.create_all(engine)
     with Session(engine) as session:
