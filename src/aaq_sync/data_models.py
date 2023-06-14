@@ -54,6 +54,14 @@ class Base(MappedAsDataclass, DeclarativeBase):
             raise ValueError(f"Extra keys in JSON for {cls.__tablename__}: {keys}")
         return cls(**json_fixed)
 
+    def pkey_value(self) -> tuple:
+        """
+        Return the value of the identity key for this instance, suitable for
+        matching instances from different sources (db vs json, for example) in
+        order to filter or compare them.
+        """
+        return self.__mapper__.primary_key_from_instance(self)
+
 
 # dataclass options (such as kw_only) aren't inherited from parent classes.
 class FAQModel(Base, kw_only=True):
