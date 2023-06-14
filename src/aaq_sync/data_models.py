@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Any, Self, TypeVar
 
-from sqlalchemy import ARRAY, ColumnElement, Float, Integer, String
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import ARRAY, ColumnElement, Float, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column
 
 T = TypeVar("T")
 
@@ -29,7 +29,7 @@ def _translate_json_field(col: ColumnElement, value: T) -> T | datetime | None:
     return value
 
 
-class Base(DeclarativeBase):
+class Base(MappedAsDataclass, DeclarativeBase):
     type_annotation_map = {
         list[str]: ARRAY(String),
         list[float]: ARRAY(Float),
@@ -55,7 +55,8 @@ class Base(DeclarativeBase):
         return cls(**json_fixed)
 
 
-class FAQModel(Base):
+# dataclass options (such as kw_only) aren't inherited from parent classes.
+class FAQModel(Base, kw_only=True):
     """
     SQLAlchemy data model for FAQ
 
@@ -64,14 +65,14 @@ class FAQModel(Base):
 
     __tablename__ = "faqmatches"
 
-    faq_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    faq_id: Mapped[int] = mapped_column(default=None, primary_key=True)
     faq_added_utc: Mapped[datetime]
     faq_updated_utc: Mapped[datetime]
     faq_author: Mapped[str]
     faq_title: Mapped[str]
     faq_content_to_send: Mapped[str]
-    faq_tags: Mapped[list[str] | None]
+    faq_tags: Mapped[list[str] | None] = mapped_column(default=None)
     faq_questions: Mapped[list[str]]
-    faq_contexts: Mapped[list[str] | None]
-    faq_thresholds: Mapped[list[float] | None]
+    faq_contexts: Mapped[list[str] | None] = mapped_column(default=None)
+    faq_thresholds: Mapped[list[float] | None] = mapped_column(default=None)
     faq_weight: Mapped[int]
