@@ -1,0 +1,58 @@
+{
+   "faqs":[
+      {
+         "faq_id":1,
+         "faq_added_utc":1649337561000,
+         "faq_updated_utc":1663239625854,
+         "faq_author":"IDinsight",
+         "faq_title":"Tummy cramps in pregnancy",
+         "faq_content_to_send":"*Most tummy pains during pregnancy are normal – but some are not*\r\n\r\nSome cramps and/or discomfort in the tummy are usual during pregnancy. Cramping happens when the womb (uterus) grows🤰🏽.",
+         "faq_tags":[
+            "stomach",
+            "pain",
+            "contractions"
+         ],
+         "faq_thresholds":[
+            0.1,
+            0.1,
+            0.1
+         ],
+         "faq_weight":1,
+         "faq_questions":[
+            "Dummy question 1",
+            "Dummy question 2",
+            "Dummy question 3",
+            "Dummy question 4",
+            "Dummy question 5"
+         ],
+         "faq_contexts":"None"
+      },
+      {
+         "faq_id":2,
+         "faq_added_utc":1652258749000,
+         "faq_updated_utc":1663838999026,
+         "faq_author":"Sam",
+         "faq_title":"What personal info MomConnect collects",
+         "faq_content_to_send":"*What personal info is collected?*\r\n\r\nMomConnect collects your phone number, WhatsApp username, ID number or passport number and/or date of birth, clinic location, and info about how your pregnancy or baby is progressing. If you send messages to the MomConnect Service, we will receive the information that you include in your message.  \r\n\r\nTo read the full MomConnect privacy policy, reply *PRIVACY*.",
+         "faq_tags":[
+            "personal",
+            "information",
+            "connect"
+         ],
+         "faq_thresholds":[
+            0.3,
+            0.3,
+            0.3
+         ],
+         "faq_weight":1,
+         "faq_questions":[
+            "Dummy question 1",
+            "Dummy question 2",
+            "Dummy question 3",
+            "Dummy question 4",
+            "Dummy question 5"
+         ],
+         "faq_contexts":"None"
+      }
+   ]
+}
