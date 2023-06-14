@@ -9,7 +9,8 @@ T = TypeVar("T")
 
 def _translate_json_field(col: ColumnElement, value: T) -> T | datetime | None:
     """
-    Translate the JSON representation of a field to a db-friendly form.
+    Translate the JSON representation of a field to a db-friendly form and do
+    basic type validation.
     """
     # col.type.python_type may raise NotImplementedError (when using
     # TypeDecorator, for example) but nothing in our existing models does that.
@@ -21,6 +22,9 @@ def _translate_json_field(col: ColumnElement, value: T) -> T | datetime | None:
         case "None" if col.nullable and col_pyt is not str:
             # NULL values are apparently represented as the string "None".
             return None
+        case _ if not isinstance(value, col_pyt):
+            [vtype, ctype] = [t.__name__ for t in [type(value), col_pyt]]
+            raise TypeError(f"{col.name} has type {vtype}, expected {ctype}")
     # Everything else is already in an appropriate form.
     return value
 
@@ -37,7 +41,8 @@ class Base(DeclarativeBase):
         Perform any translations or corrections necessary on the JSON data
         before instantiating this model.
 
-        TODO: Better validation.
+        TODO: Better validation. Specifically, it would be nice to get all the
+            validation errors at once instead of failing on the first.
         """
         json_fixed = {
             c.name: _translate_json_field(c, json_dict[c.name])

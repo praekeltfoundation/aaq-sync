@@ -4,7 +4,6 @@ from importlib import resources
 
 import pytest
 from sqlalchemy import select
-from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
 
 from aaq_sync.data_models import Base, FAQModel
@@ -99,7 +98,6 @@ def test_faq_from_json_validation(dbsession):
     with pytest.raises(ValueError, match=extra_match):
         FAQModel.from_json(faq_json | {"extra": "field", "another": 1})
 
-    # We only find out about bad datatypes when we commit. :-(
-    dbsession.add(FAQModel.from_json(faq_json | {"faq_id": "superego"}))
-    with pytest.raises(DataError):
-        dbsession.commit()
+    type_match = r"faq_id has type str, expected int"
+    with pytest.raises(TypeError, match=type_match):
+        FAQModel.from_json(faq_json | {"faq_id": "superego"})
