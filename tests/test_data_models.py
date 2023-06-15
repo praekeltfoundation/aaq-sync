@@ -22,7 +22,7 @@ def read_test_data(path: str) -> str:
 
 def fetch_faqs(dbsession: Session) -> list[FAQModel]:
     query = select(FAQModel).order_by(FAQModel.faq_id)
-    return list(dbsession.execute(query).scalars())
+    return list(dbsession.scalars(query))
 
 
 def test_faq(dbsession):
