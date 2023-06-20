@@ -16,12 +16,13 @@ def _translate_json_field(col: ColumnElement, value: T) -> T | datetime | None:
     # TypeDecorator, for example) but nothing in our existing models does that.
     col_pyt = col.type.python_type
     match value:
+        case None if col.nullable:
+            # Nullability isn't part of the python_type, so we need to check
+            # for it separately.
+            return value
         case int(v) if col_pyt is datetime:
             # Timestamps are represented as milliseconds since the unix epoch.
             return datetime.utcfromtimestamp(v / 1000)
-        case "None" if col.nullable and col_pyt is not str:
-            # NULL values are apparently represented as the string "None".
-            return None
         case _ if not isinstance(value, col_pyt):
             [vtype, ctype] = [t.__name__ for t in [type(value), col_pyt]]
             raise TypeError(f"{col.name} has type {vtype}, expected {ctype}")

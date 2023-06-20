@@ -22,7 +22,7 @@ def read_test_data(path: str) -> str:
 
 
 def faq_json_to_db(session: Session, path: str) -> list[dict]:
-    faq_dicts = json.loads(read_test_data(path))["faqs"]
+    faq_dicts = json.loads(read_test_data(path))["result"]
     faqs = [FAQModel.from_json(faqd) for faqd in faq_dicts]
     with session.begin(nested=True):
         session.add_all(faqs)
@@ -39,7 +39,7 @@ def test_filter_existing():
     Existing items are filtered out. Existing items with different values throw
     an exception.
     """
-    faq_dicts = json.loads(read_test_data("two_faqs.json"))["faqs"]
+    faq_dicts = json.loads(read_test_data("two_faqs.json"))["result"]
     [faq1e, faq2e] = [FAQModel.from_json(faqd) for faqd in faq_dicts]
     [faq1n, faq2n] = [FAQModel.from_json(faqd) for faqd in faq_dicts]
 
@@ -74,7 +74,7 @@ def test_store_new(dbsession):
     """
     New items are stored in the db.
     """
-    [faq1d, faq2d] = json.loads(read_test_data("two_faqs.json"))["faqs"]
+    [faq1d, faq2d] = json.loads(read_test_data("two_faqs.json"))["result"]
 
     # Store nothing.
     assert store_new([], dbsession) == []

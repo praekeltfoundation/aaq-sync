@@ -62,10 +62,10 @@ def test_faq(dbsession):
 
 def test_faq_from_json(dbsession):
     """
-    When loading data from JSON, timestamps and "None" strings representing
-    NULLs are translated into their db-friendly equivalents.
+    When loading data from JSON, timestamps are translated into their
+    db-friendly equivalents.
     """
-    [faqd1, faqd2] = json.loads(read_test_data("two_faqs.json"))["faqs"]
+    [faqd1, faqd2] = json.loads(read_test_data("two_faqs.json"))["result"]
 
     assert fetch_faqs(dbsession) == []
 
@@ -78,9 +78,6 @@ def test_faq_from_json(dbsession):
     # Millisecond timestamps are turned into datetimes.
     assert faqd1["faq_updated_utc"] == 1663239625854
     assert faq1.faq_updated_utc == datetime(2022, 9, 15, 11, 0, 25, 854000)
-    # "None" strings representing NULLs are turned into Nones.
-    assert faqd1["faq_contexts"] == "None"
-    assert faq1.faq_contexts is None
 
 
 def test_faq_from_json_validation(dbsession):
@@ -89,7 +86,7 @@ def test_faq_from_json_validation(dbsession):
 
     TODO: Better validation in the code under test.
     """
-    faq_json = json.loads(read_test_data("two_faqs.json"))["faqs"][0]
+    faq_json = json.loads(read_test_data("two_faqs.json"))["result"][0]
 
     with pytest.raises(KeyError):
         FAQModel.from_json({})
