@@ -1,9 +1,16 @@
 from collections.abc import Generator
 from contextlib import AbstractContextManager
-from typing import Any, Self, TypedDict
+from typing import Any, Self, TypedDict, TypeVar
 
 from attrs import define, field
 from httpx import URL, Client
+
+from .data_models import Base
+
+T = TypeVar("T")
+# Note: `TGen` on its own is equivalent to `TGen[Any]`.
+TGen = Generator[T, None, None]
+TBase = TypeVar("TBase", bound=Base)
 
 JSONDict = dict[str, Any]
 
@@ -36,10 +43,10 @@ class PaginatedResponse:
     ) -> Self:
         return cls(client, table, resp_json["metadata"], resp_json["result"])
 
-    def __iter__(self) -> Generator[JSONDict, None, None]:
+    def __iter__(self) -> TGen[JSONDict]:
         yield from self.items
 
-    def iter_all(self) -> Generator[JSONDict, None, None]:
+    def iter_all(self) -> TGen[JSONDict]:
         yield from self.items
         if self.is_last_page:
             return
@@ -75,6 +82,11 @@ class ExportClient(AbstractContextManager):
 
     def get_faqmatches(self, **kw) -> PaginatedResponse:
         return self._get_data_export("faqmatches", **kw)
+
+    def get_model_items(self, model: type[TBase], **kw) -> TGen[TBase]:
+        paginated_items = self._get_data_export(model.__tablename__, **kw)
+        for item in paginated_items.iter_all():
+            yield model.from_json(item)
 
     def _get_data_export(
         self, table: str, limit: int = 1000, offset: int = 0

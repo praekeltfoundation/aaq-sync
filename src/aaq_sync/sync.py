@@ -5,6 +5,7 @@ from typing import TypeVar
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .data_export_client import ExportClient
 from .data_models import Base
 from .itertools import IteratorWithFinishedCheck
 
@@ -57,3 +58,13 @@ def store_new(news: Iterable[TBase], session: Session) -> Iterable[TBase]:
             session.add(new)
             stored.append(new)
     return stored
+
+
+def sync_model_items(
+    model: type[TBase], exporter: ExportClient, session: Session
+) -> Iterable[TBase]:
+    """
+    Fetch model items from the data export API and store the new ones in the database.
+    """
+    model_items = exporter.get_model_items(model)
+    return store_new(model_items, session)

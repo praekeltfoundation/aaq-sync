@@ -3,11 +3,15 @@ from dataclasses import asdict
 from importlib import resources
 
 import pytest
+from httpx import URL
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from aaq_sync.data_export_client import ExportClient
 from aaq_sync.data_models import Base, FAQModel
-from aaq_sync.sync import fetch_existing, filter_existing, store_new
+from aaq_sync.sync import fetch_existing, filter_existing, store_new, sync_model_items
+
+from .fake_data_export import FakeDataExport
 
 
 @pytest.fixture()
@@ -15,6 +19,11 @@ def dbsession(dbengine):
     Base.metadata.create_all(dbengine)
     with Session(dbengine) as session:
         yield session
+
+
+@pytest.fixture()
+def fake_data_export(httpx_mock):
+    return FakeDataExport(URL("https://127.0.0.100:1234/"), httpx_mock)
 
 
 def read_test_data(path: str) -> str:
@@ -89,3 +98,27 @@ def test_store_new(dbsession):
     faq2 = FAQModel.from_json(faq2d)
     assert store_new([faq1, faq2], dbsession) == [faq2]
     assert fetch_faqs(dbsession) == [faq1, faq2]
+
+
+def test_sync_model_items(fake_data_export, dbsession):
+    """
+    New items from the export API are stored in the db.
+    """
+    [faq1d, faq2d] = json.loads(read_test_data("two_faqs.json"))["result"]
+
+    with ExportClient(fake_data_export.base_url, "token") as ec:
+        # Sync nothing.
+        assert sync_model_items(FAQModel, ec, dbsession) == []
+        assert fetch_faqs(dbsession) == []
+
+        # Sync a new item.
+        fake_data_export.faqmatches.append(faq1d)
+        faq1 = FAQModel.from_json(faq1d)
+        assert sync_model_items(FAQModel, ec, dbsession) == [faq1]
+        assert fetch_faqs(dbsession) == [faq1]
+
+        # Sync an old and a new item.
+        fake_data_export.faqmatches.append(faq2d)
+        faq2 = FAQModel.from_json(faq2d)
+        assert sync_model_items(FAQModel, ec, dbsession) == [faq2]
+        assert fetch_faqs(dbsession) == [faq1, faq2]

@@ -5,6 +5,7 @@ import pytest
 from httpx import URL, HTTPStatusError
 
 from aaq_sync.data_export_client import ExportClient
+from aaq_sync.data_models import FAQModel
 
 from .fake_data_export import FakeDataExport
 
@@ -102,3 +103,24 @@ def test_export_client_auth(fake_data_export):
         with pytest.raises(HTTPStatusError) as errinfo:
             ec.get_faqmatches()
         assert errinfo.value.response.status_code == 401
+
+
+def test_export_client_models(fake_data_export):
+    """
+    Given a model class, the client fetches all items as instances of that
+    model.
+    """
+    [faq1, faq2] = json.loads(read_test_data("two_faqs.json"))["result"]
+    [faqm1, faqm2] = [FAQModel.from_json(faq) for faq in [faq1, faq2]]
+
+    with ExportClient(fake_data_export.base_url, "token") as ec:
+        empty = list(ec.get_model_items(FAQModel))
+        assert empty == []
+
+        fake_data_export.faqmatches.append(faq1)
+        one = list(ec.get_model_items(FAQModel))
+        assert one == [faqm1]
+
+        fake_data_export.faqmatches.append(faq2)
+        two = list(ec.get_model_items(FAQModel))
+        assert two == [faqm1, faqm2]
