@@ -1,4 +1,4 @@
-from collections.abc import Generator, Iterable, Sequence
+from collections.abc import Generator, Iterable
 from dataclasses import asdict
 from typing import TypeVar
 
@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .data_models import Base
+from .itertools import IteratorWithFinishedCheck
 
 T = TypeVar("T")
 # Note: `TGen` on its own is equivalent to `TGen[Any]`.
@@ -13,13 +14,14 @@ TGen = Generator[T, None, None]
 TBase = TypeVar("TBase", bound=Base)
 
 
-def filter_existing(olds: Iterable[TBase], news: Sequence[TBase]) -> TGen[TBase]:
+def filter_existing(olds: Iterable[TBase], news: Iterable[TBase]) -> TGen[TBase]:
     """
     Filter existing items out of the new items collection. If any existing item
     doesn't have the same value as a corresponding new item, raise an
     exception.
     """
-    if len(news) == 0:
+    news = IteratorWithFinishedCheck(news)
+    if news.finished:
         return
     existing = {old.pkey_value(): old for old in olds}
     for new in news:
@@ -41,13 +43,14 @@ def fetch_existing(model: type[TBase], session: Session) -> Iterable[TBase]:
     return session.scalars(select(model).order_by(*model.__table__.primary_key))
 
 
-def store_new(news: Sequence[TBase], session: Session) -> Sequence[TBase]:
+def store_new(news: Iterable[TBase], session: Session) -> Iterable[TBase]:
     """
     Store new items in the database.
     """
-    if len(news) == 0:
+    news = IteratorWithFinishedCheck(news)
+    if news.finished:
         return []
-    olds = fetch_existing(type(news[0]), session)
+    olds = fetch_existing(type(news.peek_next()), session)
     stored: list[TBase] = []
     with session.begin(nested=True):
         for new in filter_existing(olds, news):
