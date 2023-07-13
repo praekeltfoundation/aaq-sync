@@ -19,6 +19,10 @@ def read_test_data(path: str) -> str:
 class Database:
     engine: Engine
 
+    @property
+    def url_with_password(self):
+        return self.engine.url.render_as_string(hide_password=False)
+
     @contextmanager
     def session(self, **kw) -> Generator[Session, None, None]:
         kw.setdefault("expire_on_commit", False)

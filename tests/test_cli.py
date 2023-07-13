@@ -92,7 +92,7 @@ def test_sync_faqmatches_envvars(runner, fake_data_export, db, monkeypatch):
 
     assert db.fetch_faqs() == []
 
-    monkeypatch.setenv("AAQ_SYNC_DB_URL", str(db.engine.url))
+    monkeypatch.setenv("AAQ_SYNC_DB_URL", db.engine.url_with_password)
     monkeypatch.setenv("AAQ_SYNC_EXPORT_URL", str(fake_data_export.base_url))
     monkeypatch.setenv("AAQ_SYNC_EXPORT_TOKEN", "faketoken")
     monkeypatch.setenv("AAQ_SYNC_TABLES", "faqmatches")
