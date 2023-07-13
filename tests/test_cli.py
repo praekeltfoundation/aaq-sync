@@ -77,5 +77,27 @@ def test_sync_faqmatches(runner, fake_data_export, db):
     ]
 
     result = runner.invoke(aaq_sync, opts)
+    print(result.output)
+    assert result.exit_code == 0
+    assert db.fetch_faqs() == [faq1, faq2]
+
+
+def test_sync_faqmatches_envvars(runner, fake_data_export, db, monkeypatch):
+    """
+    All config options can be provided through envvars.
+    """
+    faqds = json.loads(read_test_data("two_faqs.json"))["result"]
+    [faq1, faq2] = [FAQModel.from_json(faqd) for faqd in faqds]
+    fake_data_export.faqmatches.extend(faqds)
+
+    assert db.fetch_faqs() == []
+
+    monkeypatch.setenv("AAQ_SYNC_DB_URL", str(db.engine.url))
+    monkeypatch.setenv("AAQ_SYNC_EXPORT_URL", str(fake_data_export.base_url))
+    monkeypatch.setenv("AAQ_SYNC_EXPORT_TOKEN", "faketoken")
+    monkeypatch.setenv("AAQ_SYNC_TABLES", "faqmatches")
+
+    result = runner.invoke(aaq_sync, [])
+    print(result.output)
     assert result.exit_code == 0
     assert db.fetch_faqs() == [faq1, faq2]

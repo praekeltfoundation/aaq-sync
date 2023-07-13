@@ -48,30 +48,30 @@ class TableChoiceParam(click.Choice, OptMixin):
         return MODEL_MAPPING[super().convert(value, param, ctx)]
 
 
-@click.command()
+@click.command(context_settings={"auto_envvar_prefix": "AAQ_SYNC"})
 @DbURLParam.option("--db-url", help="Database URL.")
 @HttpURLParam.option("--export-url", help="Data export API URL.")
 @click.option("--export-token", type=str, required=True, help="Export API auth token.")
 @TableChoiceParam.option(
-    "models", "--table", multiple=True, help="Table to sync. (Multiple allowed.)"
+    "tables", "--table", multiple=True, help="Table to sync. (Multiple allowed.)"
 )
 def aaq_sync(
     db_url: DbURL,
     export_url: HttpURL,
     export_token: str,
-    models: list[type[Base]],
+    tables: list[type[Base]],
 ):
     """
     Sync one or more AAQ tables from the given data export API endpoint to the
     given database.
     """
-    print(db_url, export_url, models)
+    print(db_url, export_url, tables)
     dbengine = create_engine(db_url, echo=False)
     with (
         Session(dbengine) as session,
         ExportClient(export_url, export_token) as exporter,
     ):
-        for model in models:
-            click.echo(f"Syncing {model.__tablename__} ...")
-            synced = sync_model_items(model, exporter, session)
-            click.echo(f"Synced {len(synced)} {model.__tablename__} items.")
+        for table in tables:
+            click.echo(f"Syncing {table.__tablename__} ...")
+            synced = sync_model_items(table, exporter, session)
+            click.echo(f"Synced {len(synced)} {table.__tablename__} items.")
