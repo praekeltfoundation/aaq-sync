@@ -1,46 +1,26 @@
 import json
 from dataclasses import asdict
-from importlib import resources
 
 import pytest
 from httpx import URL
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from aaq_sync.data_export_client import ExportClient
 from aaq_sync.data_models import Base, FAQModel
 from aaq_sync.sync import fetch_existing, filter_existing, store_new, sync_model_items
 
 from .fake_data_export import FakeDataExport
+from .helpers import Database, read_test_data
 
 
 @pytest.fixture()
-def dbsession(dbengine):
+def db(dbengine):
     Base.metadata.create_all(dbengine)
-    with Session(dbengine) as session:
-        yield session
+    return Database(dbengine)
 
 
 @pytest.fixture()
 def fake_data_export(httpx_mock):
     return FakeDataExport(URL("https://127.0.0.100:1234/"), httpx_mock)
-
-
-def read_test_data(path: str) -> str:
-    return (resources.files(__package__) / "test_data" / path).read_text()
-
-
-def faq_json_to_db(session: Session, path: str) -> list[dict]:
-    faq_dicts = json.loads(read_test_data(path))["result"]
-    faqs = [FAQModel.from_json(faqd) for faqd in faq_dicts]
-    with session.begin(nested=True):
-        session.add_all(faqs)
-    return [asdict(m) for m in sorted(faqs, key=lambda m: m.pkey_value())]
-
-
-def fetch_faqs(session: Session) -> list[FAQModel]:
-    query = select(FAQModel).order_by(FAQModel.faq_id)
-    return list(session.scalars(query))
 
 
 def test_filter_existing():
@@ -69,38 +49,45 @@ def test_filter_existing():
         list(filter_existing([faq2e], [faq1n, faq2n]))
 
 
-def test_fetch_existing(dbsession):
+def test_fetch_existing(db):
     """
     Existing items are fetched from the db.
     """
-    faqs = faq_json_to_db(dbsession, "two_faqs.json")
+    faqs = db.faq_json_to_db("two_faqs.json")
 
-    [faq1, faq2] = list(fetch_existing(FAQModel, dbsession))
+    with db.session() as session:
+        [faq1, faq2] = list(fetch_existing(FAQModel, session))
     assert [asdict(faq1), asdict(faq2)] == faqs
 
 
-def test_store_new(dbsession):
+def test_store_new(db):
     """
     New items are stored in the db.
     """
     [faq1d, faq2d] = json.loads(read_test_data("two_faqs.json"))["result"]
 
     # Store nothing.
-    assert store_new([], dbsession) == []
-    assert fetch_faqs(dbsession) == []
+    with db.session() as session:
+        assert store_new([], session) == []
+        session.commit()
+    assert db.fetch_faqs() == []
 
     # Store a new item.
     faq1 = FAQModel.from_json(faq1d)
-    assert store_new([faq1], dbsession) == [faq1]
-    assert fetch_faqs(dbsession) == [faq1]
+    with db.session() as session:
+        assert store_new([faq1], session) == [faq1]
+        session.commit()
+    assert db.fetch_faqs() == [faq1]
 
     # Store an old and a new item.
     faq2 = FAQModel.from_json(faq2d)
-    assert store_new([faq1, faq2], dbsession) == [faq2]
-    assert fetch_faqs(dbsession) == [faq1, faq2]
+    with db.session() as session:
+        assert store_new([faq1, faq2], session) == [faq2]
+        session.commit()
+    assert db.fetch_faqs() == [faq1, faq2]
 
 
-def test_sync_model_items(fake_data_export, dbsession):
+def test_sync_model_items(fake_data_export, db):
     """
     New items from the export API are stored in the db.
     """
@@ -108,17 +95,20 @@ def test_sync_model_items(fake_data_export, dbsession):
 
     with ExportClient(fake_data_export.base_url, "token") as ec:
         # Sync nothing.
-        assert sync_model_items(FAQModel, ec, dbsession) == []
-        assert fetch_faqs(dbsession) == []
+        with db.session() as session:
+            assert sync_model_items(FAQModel, ec, session) == []
+        assert db.fetch_faqs() == []
 
         # Sync a new item.
         fake_data_export.faqmatches.append(faq1d)
         faq1 = FAQModel.from_json(faq1d)
-        assert sync_model_items(FAQModel, ec, dbsession) == [faq1]
-        assert fetch_faqs(dbsession) == [faq1]
+        with db.session() as session:
+            assert sync_model_items(FAQModel, ec, session) == [faq1]
+        assert db.fetch_faqs() == [faq1]
 
         # Sync an old and a new item.
         fake_data_export.faqmatches.append(faq2d)
         faq2 = FAQModel.from_json(faq2d)
-        assert sync_model_items(FAQModel, ec, dbsession) == [faq2]
-        assert fetch_faqs(dbsession) == [faq1, faq2]
+        with db.session() as session:
+            assert sync_model_items(FAQModel, ec, session) == [faq2]
+        assert db.fetch_faqs() == [faq1, faq2]

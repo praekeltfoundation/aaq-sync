@@ -1,5 +1,4 @@
 import json
-from importlib import resources
 
 import pytest
 from httpx import URL, HTTPStatusError
@@ -8,15 +7,12 @@ from aaq_sync.data_export_client import ExportClient
 from aaq_sync.data_models import FAQModel
 
 from .fake_data_export import FakeDataExport
+from .helpers import read_test_data
 
 
 @pytest.fixture()
 def fake_data_export(httpx_mock):
     return FakeDataExport(URL("https://127.0.0.100:1234/"), httpx_mock)
-
-
-def read_test_data(path: str) -> str:
-    return (resources.files(__package__) / "test_data" / path).read_text()
 
 
 def test_export_client_faqmatches(fake_data_export):

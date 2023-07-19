@@ -1,35 +1,32 @@
 import json
 from datetime import datetime
-from importlib import resources
 
 import pytest
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 
-from aaq_sync.data_models import Base, FAQModel
+from aaq_sync.data_models import Base, FAQModel, get_models
+
+from .helpers import Database, read_test_data
 
 
 @pytest.fixture()
-def dbsession(dbengine):
+def db(dbengine):
     Base.metadata.create_all(dbengine)
-    with Session(dbengine) as session:
-        yield session
+    return Database(dbengine)
 
 
-def read_test_data(path: str) -> str:
-    return (resources.files(__package__) / "test_data" / path).read_text()
+def test_get_models():
+    """
+    We can get a list of available models.
+    """
+    # NOTE: This needs to be updated for every model we add.
+    assert get_models() == {FAQModel}
 
 
-def fetch_faqs(dbsession: Session) -> list[FAQModel]:
-    query = select(FAQModel).order_by(FAQModel.faq_id)
-    return list(dbsession.scalars(query))
-
-
-def test_faq(dbsession):
+def test_faq(db):
     """
     We can create FAQ entries and load them from the db.
     """
-    assert fetch_faqs(dbsession) == []
+    assert db.fetch_faqs() == []
     now = datetime.utcnow()
 
     faq1 = FAQModel(
@@ -54,33 +51,35 @@ def test_faq(dbsession):
         faq_questions=["How do I answer a question?"],
     )
 
-    dbsession.add_all([faq1, faq2])
-    dbsession.commit()
+    with db.session() as session:
+        session.add_all([faq1, faq2])
+        session.commit()
 
-    assert fetch_faqs(dbsession) == [faq1, faq2]
+    assert db.fetch_faqs() == [faq1, faq2]
 
 
-def test_faq_from_json(dbsession):
+def test_faq_from_json(db):
     """
     When loading data from JSON, timestamps are translated into their
     db-friendly equivalents.
     """
     [faqd1, faqd2] = json.loads(read_test_data("two_faqs.json"))["result"]
 
-    assert fetch_faqs(dbsession) == []
+    assert db.fetch_faqs() == []
 
     faq1 = FAQModel.from_json(faqd1)
     faq2 = FAQModel.from_json(faqd2)
-    dbsession.add_all([faq1, faq2])
-    dbsession.commit()
+    with db.session() as session:
+        session.add_all([faq1, faq2])
+        session.commit()
 
-    assert fetch_faqs(dbsession) == [faq1, faq2]
+    assert db.fetch_faqs() == [faq1, faq2]
     # Millisecond timestamps are turned into datetimes.
     assert faqd1["faq_updated_utc"] == 1663239625854
     assert faq1.faq_updated_utc == datetime(2022, 9, 15, 11, 0, 25, 854000)
 
 
-def test_faq_from_json_validation(dbsession):
+def test_faq_from_json_validation():
     """
     When loading data from JSON, various invalid inputs are detected.
 

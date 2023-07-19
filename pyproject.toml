@@ -17,11 +17,15 @@ include = [
     { path = "tests", format = "sdist" }
 ]
 
+[tool.poetry.scripts]
+aaq-sync = "aaq_sync.cli:aaq_sync"
+
 [tool.poetry.dependencies]
 python = "^3.11"
 attrs = "^23.1.0"
-sqlalchemy = "^2.0.16"
+click = "^8.1.4"
 httpx = "^0.24.1"
+sqlalchemy = "^2.0.16"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
@@ -31,22 +35,23 @@ pytest-cov = "^4.0.0"
 pytest-httpx = "^0.22.0"
 pytest-postgresql = "^5.0.0"
 ruff = "^0.0.261"
+types-click = "^7.1.8"
 
 [tool.poetry.group.lsp]
 optional = true
 
 [tool.poetry.group.lsp.dependencies]
-python-lsp-server = "^1.7.2"
-python-lsp-ruff = "^1.4.0"
-python-lsp-black = "^1.2.1"
 pylsp-mypy = "^0.6.6"
+python-lsp-black = "^1.2.1"
+python-lsp-ruff = "^1.4.0"
+python-lsp-server = "^1.7.2"
 
 [tool.black]
 preview = true
 
 [tool.mypy]
-ignore_missing_imports = false
 check_untyped_defs = true
+ignore_missing_imports = false
 
 [tool.pytest.ini_options]
 addopts = "--cov=src --cov-report=term-missing"

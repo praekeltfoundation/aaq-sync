@@ -1,3 +1,4 @@
+from collections.abc import Collection
 from datetime import datetime
 from typing import Any, Self, TypeVar
 
@@ -62,6 +63,10 @@ class Base(MappedAsDataclass, DeclarativeBase):
         order to filter or compare them.
         """
         return self.__mapper__.primary_key_from_instance(self)
+
+
+def get_models() -> Collection[type[Base]]:
+    return {m.class_ for m in Base.registry.mappers}
 
 
 # dataclass options (such as kw_only) aren't inherited from parent classes.
