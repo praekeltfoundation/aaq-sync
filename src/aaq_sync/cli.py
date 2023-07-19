@@ -65,7 +65,6 @@ def aaq_sync(
     Sync one or more AAQ tables from the given data export API endpoint to the
     given database.
     """
-    print(db_url, export_url, tables)
     dbengine = create_engine(db_url, echo=False)
     with (
         Session(dbengine) as session,
